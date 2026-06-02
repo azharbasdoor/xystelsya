@@ -1,5 +1,5 @@
 /**
- * LLM Chat App Frontend (Universal dengan Fitur Cookie Backup)
+ * LLM Chat App (Super Kompatibel untuk Android & HP Keypad WAP Browser)
  */
 
 var chatMessages = document.getElementById("chat-messages");
@@ -10,57 +10,78 @@ var typingIndicator = document.getElementById("typing-indicator");
 var isProcessing = false;
 var chatHistory = [];
 
-// --- UTILITY COOKIE (Agar riwayat chat tidak hilang saat ditekan Refresh) ---
+// --- UTILITY COOKIE PRIMITIF (Mencegah error JSON di browser WAP lama) ---
 function setChatCookie(historyArray) {
     try {
-        // Batasi riwayat maksimal 6 pesan terakhir agar muat di memori cookie ponsel jadul (< 4KB)
         var limitedHistory = historyArray;
+        // Batasi memori untuk hp jadul (maks 6 obrolan terakhir)
         if (historyArray.length > 6) {
-            var firstMsg = historyArray[0];
-            var lastMessages = historyArray.slice(historyArray.length - 5);
-            limitedHistory = [firstMsg];
-            for (var i = 0; i < lastMessages.length; i++) {
-                limitedHistory.push(lastMessages[i]);
-            }
+            limitedHistory = [historyArray[0]];
+            var lastMsgs = historyArray.slice(historyArray.length - 5);
+            for(var x=0; x<lastMsgs.length; x++) { limitedHistory.push(lastMsgs[x]); }
         }
-        var str = JSON.stringify(limitedHistory);
+        
+        // Buat string manual: role:::pesan|||role:::pesan (Menghindari error JSON.stringify)
+        var str = "";
+        for (var i = 0; i < limitedHistory.length; i++) {
+            var safeContent = limitedHistory[i].content.replace(/\|\|\|/g, "").replace(/:::/g, "");
+            str += limitedHistory[i].role + ":::" + escape(safeContent);
+            if (i < limitedHistory.length - 1) str += "|||";
+        }
+        
         var date = new Date();
-        date.setTime(date.getTime() + (24 * 60 * 60 * 1000)); // Aktif 1 hari
-        document.cookie = "xystelsya_chat=" + encodeURIComponent(str) + "; expires=" + date.toUTCString() + "; path=/";
+        date.setTime(date.getTime() + (24 * 60 * 60 * 1000)); 
+        document.cookie = "xt_chat=" + str + "; expires=" + date.toUTCString() + "; path=/";
     } catch (e) {}
 }
 
 function getChatCookie() {
     try {
-        var nameEQ = "xystelsya_chat=";
+        var nameEQ = "xt_chat=";
         var ca = document.cookie.split(';');
         for (var i = 0; i < ca.length; i++) {
             var c = ca[i];
             while (c.charAt(0) == ' ') c = c.substring(1, c.length);
             if (c.indexOf(nameEQ) == 0) {
-                var str = decodeURIComponent(c.substring(nameEQ.length, c.length));
-                return JSON.parse(str);
+                var str = c.substring(nameEQ.length, c.length);
+                if (str === "") return null;
+                
+                // Pecah string manual (Menghindari error JSON.parse)
+                var history = [];
+                var parts = str.split("|||");
+                for (var j = 0; j < parts.length; j++) {
+                    var p = parts[j].split(":::");
+                    if (p.length === 2) {
+                        history.push({ role: p[0], content: unescape(p[1]) });
+                    }
+                }
+                return history;
             }
         }
     } catch (e) {}
     return null;
 }
 
-// --- INITIAL LOAD (Memuat Chat Pertama Kali) ---
+// --- FUNGSI HAPUS OBROLAN ---
+function clearChat() {
+    // Matikan cookie dan ulangi halaman
+    document.cookie = "xt_chat=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    window.location.reload();
+}
+
+// --- INITIAL LOAD ---
 function initChat() {
     chatHistory = getChatCookie();
     
-    // Jika cookie kosong, buat pesan sambutan pertama
     if (!chatHistory || chatHistory.length === 0) {
         chatHistory = [
             {
                 role: "assistant",
-                content: "Hello, I'm Xystelsya, How can I help you?"
+                content: "This is Xystelsya, 007 Agent, Ready to listen your secret."
             }
         ];
     }
     
-    // Tampilkan semua riwayat dari cookie ke layar
     chatMessages.innerHTML = "";
     for (var i = 0; i < chatHistory.length; i++) {
         var msg = chatHistory[i];
@@ -76,7 +97,6 @@ function addMessageVisual(role, content) {
     messageEl.innerHTML = content;
     chatMessages.appendChild(messageEl);
 
-    // Clearfix pemisah float agar layout tidak menumpuk
     var clearEl = document.createElement("div");
     clearEl.className = "clear";
     chatMessages.appendChild(clearEl);
@@ -85,18 +105,31 @@ function addMessageVisual(role, content) {
     return messageEl;
 }
 
-// --- LOGIKA PENGIRIMAN PESAN ---
-function triggerSend(e) {
-    if (e && e.preventDefault) {
-        e.preventDefault(); // Mencegah reload halaman langsung di Android
+// Ekstraktor Balasan Primitif (Fallback jika browser HP tidak mengenali object JSON API)
+function extractResponseText(lineText) {
+    if (window.JSON && window.JSON.parse) {
+        try { 
+            var d = JSON.parse(lineText); 
+            return d.response ? d.response : ""; 
+        } catch(e) {}
+    } 
+    // Fallback khusus untuk Sony Ericsson & Maui Browser
+    var match = lineText.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (match && match[1]) {
+        var text = match[1];
+        return text.replace(/\\n/g, "<br>").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
     }
+    return "";
+}
+
+// --- LOGIKA PENGIRIMAN PESAN ---
+function submitForm() {
     sendMessage();
-    return false; // Menghentikan submit form tradisional agar AJAX berjalan
+    return false; // Cegah browser reload otomatis
 }
 
 function sendMessage() {
     var rawText = userInput.value;
-    // Fungsi trim manual agar kompatibel dengan JavaScript versi sangat tua
     var message = rawText.replace(/^\s+|\s+$/g, '');
 
     if (message === "" || isProcessing) return;
@@ -105,7 +138,6 @@ function sendMessage() {
     userInput.disabled = true;
     sendButton.disabled = true;
 
-    // Tampilkan pesan user ke layar dan simpan ke cookie
     addMessageVisual("user", message);
     chatHistory.push({ role: "user", content: message });
     setChatCookie(chatHistory);
@@ -114,10 +146,8 @@ function sendMessage() {
     typingIndicator.style.display = "block";
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // Siapkan wadah kosong untuk balasan bot berikutnya
     var assistantMessageEl = addMessageVisual("assistant", "...");
 
-    // Koneksi API via AJAX Klasik
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/chat", true);
     xhr.setRequestHeader("Content-Type", "application/json");
@@ -138,23 +168,21 @@ function sendMessage() {
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i].replace(/^\s+|\s+$/g, '');
                     if (line !== "") {
-                        try {
-                            var jsonData = JSON.parse(line);
-                            if (jsonData.response) {
-                                responseText += jsonData.response;
-                            }
-                        } catch (e) {}
+                        responseText += extractResponseText(line);
                     }
                 }
                 
-                // Masukkan teks balasan ke layar dan perbarui cookie riwayat
+                if(responseText === "") {
+                    responseText = "Data diterima, namun tidak bisa dibaca oleh browser. Silakan klik Refresh Chat.";
+                }
+
                 assistantMessageEl.innerHTML = responseText;
                 chatHistory.push({ role: "assistant", content: responseText });
                 setChatCookie(chatHistory);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 
             } else {
-                assistantMessageEl.innerHTML = "Gagal memproses. Silakan tekan tombol Refresh Chat.";
+                assistantMessageEl.innerHTML = "Gagal memproses (" + xhr.status + "). Silakan klik Refresh Chat.";
             }
         }
     };
@@ -164,12 +192,20 @@ function sendMessage() {
         isProcessing = false;
         userInput.disabled = false;
         sendButton.disabled = false;
-        assistantMessageEl.innerHTML = "Koneksi terputus. Silakan tunggu sebentar lalu klik tombol Refresh Chat.";
+        assistantMessageEl.innerHTML = "Koneksi terputus. Silakan klik Refresh Chat.";
     };
 
-    var payload = JSON.stringify({ messages: chatHistory });
+    // Merakit JSON manual untuk payload API tanpa menggunakan JSON.stringify
+    var payload = '{"messages":[';
+    for(var k = 0; k < chatHistory.length; k++) {
+        var safeForJson = chatHistory[k].content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
+        payload += '{"role":"' + chatHistory[k].role + '","content":"' + safeForJson + '"}';
+        if(k < chatHistory.length - 1) payload += ',';
+    }
+    payload += ']}';
+
     xhr.send(payload);
 }
 
-// Jalankan inisialisasi obrolan saat halaman selesai dimuat
+// Inisialisasi saat script dimuat
 initChat();

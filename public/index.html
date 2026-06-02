@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Xystelsya AI</title>
     <style>
-      /* CSS Klasik Universal - Kompatibel Android & HP Jadul */
       body {
         font-family: Arial, sans-serif;
         line-height: 1.4;
@@ -88,7 +87,6 @@
         background-color: #3016db;
       }
 
-      /* Form Kontrol berbasis HTML Murni agar Keypad berfungsi */
       .message-input-form {
         padding: 10px;
         background-color: #ffffff;
@@ -121,30 +119,39 @@
         vertical-align: middle;
       }
 
-      /* Tombol Navigasi Manual Refresh */
+      /* Container untuk tombol Refresh dan Clear */
       .action-container {
         padding: 5px 10px 10px 10px;
         text-align: center;
         background-color: #ffffff;
+        display: block;
       }
 
-      .refresh-button {
-        display: block;
-        width: 97%;
-        margin: 0 auto;
+      .btn-action {
+        display: inline-block;
+        width: 45%;
+        margin: 0 1%;
         padding: 10px 0;
-        background-color: #59144a;
         color: #ffffff;
         text-decoration: none;
         font-weight: bold;
-        font-size: 14px;
+        font-size: 13px;
         border-radius: 4px;
         text-align: center;
+        box-sizing: border-box;
+      }
+
+      .btn-refresh {
+        background-color: #59144a;
         border: 1px solid #59144a;
       }
 
-      /* Efek fokus saat disorot D-Pad HP Jadul / Kursor */
-      #user-input:focus, #send-button:focus, .refresh-button:focus {
+      .btn-clear {
+        background-color: #d90429;
+        border: 1px solid #d90429;
+      }
+
+      #user-input:focus, #send-button:focus, .btn-action:focus {
         background-color: #ffffcc;
         color: #000000;
         border: 2px solid #ff0000;
@@ -171,16 +178,17 @@
         </div>
 
       <div class="typing-indicator" id="typing-indicator">
-        Memproses jawaban, silakan tunggu...
+        Memproses balasan, mohon tunggu...
       </div>
 
-      <form id="chat-form" action="." method="get" onsubmit="return triggerSend(event);" class="message-input-form">
+      <form id="chat-form" action="#" onsubmit="return submitForm();" class="message-input-form">
         <input type="text" id="user-input" name="message" placeholder="Ketik pertanyaan..." autocomplete="off" />
         <input type="submit" id="send-button" value="Kirim" />
       </form>
       
       <div class="action-container">
-        <a href="." class="refresh-button">Cek Balasan / Refresh Chat</a>
+        <a href="javascript:void(0);" onclick="window.location.reload();" class="btn-action btn-refresh">Refresh Chat</a>
+        <a href="javascript:void(0);" onclick="clearChat();" class="btn-action btn-clear">Hapus Obrolan</a>
       </div>
 
       <div class="footer">
