@@ -1,110 +1,157 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Xystelsya AI (Tasyacore Intelligence System)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Xystelsya AI</title>
     <style>
-      :root {
-        --primary-color: #0f1c73;
-        --primary-hover: #59144a;
-        --light-bg: #3016db;
-        --border-color: #2712e0;
-        --text-color: #fafafa;
-        --text-light: #6b7280;
-        --user-msg-bg: #e0129c;
-        --assistant-msg-bg: #10d2e8;
-      }
-
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-
+      /* Layout Klasik untuk Ponsel Jadul */
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          Cantarell, sans-serif;
-        line-height: 1.6;
+        font-family: sans-serif;
+        line-height: 1.4;
         color: #370870;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 1rem;
+        margin: 0;
+        padding: 5px;
+        background-color: #ffffff;
+        font-size: 14px;
       }
 
-      header {
+      .header {
         text-align: center;
-        margin-bottom: 2rem;
-        padding: 1rem 0;
-        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 2px solid #2712e0;
       }
 
-      h1 {
-        font-size: 1.5rem;
-        color: var(--primary-color);
+      .header h1 {
+        font-size: 18px;
+        color: #0f1c73;
+        margin: 5px 0;
+      }
+      
+      .header p {
+        font-size: 12px;
+        margin: 0;
       }
 
       .chat-container {
-        display: flex;
-        flex-direction: column;
-        height: calc(100vh - 200px);
-        min-height: 400px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        overflow: hidden;
+        border: 1px solid #2712e0;
+        background-color: #3016db;
+        padding: 5px;
+        height: 250px; /* Ukuran pas untuk layar jadul */
+        overflow-y: scroll;
       }
 
-      .chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        padding: 1rem;
-        background-color: var(--light-bg);
+      /* Clearfix untuk float */
+      .clear {
+        clear: both;
+        line-height: 0;
+        height: 0;
       }
 
       .message {
-        margin-bottom: 1rem;
-        padding: 0.75rem;
-        border-radius: 8px;
-        max-width: 80%;
+        margin-bottom: 10px;
+        padding: 8px;
+        border-radius: 5px;
+        width: 80%;
+        word-wrap: break-word;
       }
 
       .user-message {
-        background-color: var(--user-msg-bg);
-        align-self: flex-end;
-        margin-left: auto;
+        background-color: #e0129c;
+        color: #ffffff;
+        float: right;
+        text-align: right;
       }
 
       .assistant-message {
-        background-color: var(--assistant-msg-bg);
-        align-self: flex-start;
+        background-color: #10d2e8;
+        color: #000000;
+        float: left;
+      }
+
+      .typing-indicator {
+        display: none;
+        font-style: italic;
+        color: #6b7280;
+        text-align: center;
+        font-size: 12px;
+        margin-top: 10px;
       }
 
       .message-input {
-        display: flex;
-        padding: 0.75rem;
-        border-top: 1px solid var(--border-color);
-        background-color: white;
+        margin-top: 10px;
+        text-align: center;
       }
 
       #user-input {
-        flex: 1;
-        padding: 0.75rem;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        font-family: inherit;
-        resize: none;
-        min-height: 44px;
+        width: 95%;
+        box-sizing: border-box;
+        padding: 8px;
+        border: 1px solid #2712e0;
+        margin-bottom: 5px;
+        height: 40px;
+        font-size: 14px;
       }
 
       #send-button {
-        margin-left: 0.5rem;
-        padding: 0 1rem;
-        background-color: var(--primary-color);
+        width: 95%;
+        padding: 10px;
+        background-color: #0f1c73;
         color: white;
         border: none;
-        border-radius: 4px;
-        cursor: pointer;
+        font-weight: bold;
+        font-size: 14px;
+      }
+
+      /* Highlight tebal saat tombol/input disorot D-Pad Keypad */
+      #user-input:focus, #send-button:focus {
+        border: 2px solid #59144a;
+        background-color: #eeeeee;
+      }
+      
+      #send-button:focus {
+        background-color: #59144a;
+        color: #ffffff;
+      }
+
+      .footer {
+        margin-top: 15px;
+        text-align: center;
+        font-size: 10px;
+        color: #f50ac6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Xystelsya</h1>
+      <p>Tasyacore System</p>
+    </div>
+
+    <div id="chat-messages" class="chat-container">
+      <div class="message assistant-message">
+        Hello, I'm Xystelsya, How can I help you?
+      </div>
+      <div class="clear"></div>
+    </div>
+
+    <div class="typing-indicator" id="typing-indicator">
+      Xystelsya is thinking...
+    </div>
+
+    <div class="message-input">
+      <textarea id="user-input" placeholder="Type here..."></textarea>
+      <button id="send-button">Send</button>
+    </div>
+
+    <div class="footer">
+      nS.aB Private Family Media
+    </div>
+
+    <script src="chat.js"></script>
+  </body>
+</html>        cursor: pointer;
         transition: background-color 0.2s;
       }
 
