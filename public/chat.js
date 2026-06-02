@@ -1,110 +1,147 @@
 /**
- * LLM Chat App Frontend
- *
- * Handles the chat UI interactions and communication with the backend API.
+ * LLM Chat App Frontend (Versi Kompatibel Ponsel Jadul)
  */
 
 // DOM elements
-const chatMessages = document.getElementById("chat-messages");
-const userInput = document.getElementById("user-input");
-const sendButton = document.getElementById("send-button");
-const typingIndicator = document.getElementById("typing-indicator");
+var chatMessages = document.getElementById("chat-messages");
+var userInput = document.getElementById("user-input");
+var sendButton = document.getElementById("send-button");
+var typingIndicator = document.getElementById("typing-indicator");
 
 // Chat state
-let chatHistory = [
+var chatHistory = [
   {
     role: "assistant",
-    content:
-      "This is Xystelsya, 007 Agent, Ready to listen your secret",
-  },
-];
-let isProcessing = false;
-
-// Auto-resize textarea as user types
-userInput.addEventListener("input", function () {
-  this.style.height = "auto";
-  this.style.height = this.scrollHeight + "px";
-});
-
-// Send message on Enter (without Shift)
-userInput.addEventListener("keydown", function (e) {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
+    content: "Hello, I'm Xystelsya, How can I help you?"
   }
-});
+];
+var isProcessing = false;
 
-// Send button click handler
-sendButton.addEventListener("click", sendMessage);
+// Event Click untuk tombol Send
+sendButton.onclick = function() {
+    sendMessage();
+};
+
+// Event Enter pada Keypad (opsional, karena pengguna keypad biasanya menekan tombol 'Send')
+userInput.onkeydown = function(e) {
+    var key = e.keyCode || e.which;
+    if (key === 13) {
+        if(e.preventDefault) e.preventDefault();
+        sendMessage();
+        return false;
+    }
+};
 
 /**
- * Sends a message to the chat API and processes the response
+ * Menghapus spasi berlebih (pengganti .trim() untuk browser sangat lawas)
  */
-async function sendMessage() {
-  const message = userInput.value.trim();
+function trimString(str) {
+    return str.replace(/^\s+|\s+$/g, '');
+}
 
-  // Don't send empty messages
-  if (message === "" || isProcessing) return;
+/**
+ * Helper function untuk menambah pesan ke layar
+ */
+function addMessageToChat(role, content) {
+    var messageEl = document.createElement("div");
+    messageEl.className = "message " + role + "-message";
+    messageEl.innerHTML = content;
+    
+    chatMessages.appendChild(messageEl);
 
-  // Disable input while processing
-  isProcessing = true;
-  userInput.disabled = true;
-  sendButton.disabled = true;
+    // Clearfix agar layout float tidak berantakan
+    var clearEl = document.createElement("div");
+    clearEl.className = "clear";
+    chatMessages.appendChild(clearEl);
 
-  // Add user message to chat
-  addMessageToChat("user", message);
-
-  // Clear input
-  userInput.value = "";
-  userInput.style.height = "auto";
-
-  // Show typing indicator
-  typingIndicator.classList.add("visible");
-
-  // Add message to history
-  chatHistory.push({ role: "user", content: message });
-
-  try {
-    // Create new assistant response element
-    const assistantMessageEl = document.createElement("div");
-    assistantMessageEl.className = "message assistant-message";
-    assistantMessageEl.innerHTML = "<p></p>";
-    chatMessages.appendChild(assistantMessageEl);
-
-    // Scroll to bottom
+    // Scroll otomatis ke bawah
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    return messageEl; // Mengembalikan elemen jika perlu diperbarui nanti
+}
 
-    // Send request to API
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: chatHistory,
-      }),
-    });
+/**
+ * Mengirim pesan dengan AJAX Klasik (XMLHttpRequest)
+ */
+function sendMessage() {
+    var message = trimString(userInput.value);
 
-    // Handle errors
-    if (!response.ok) {
-      throw new Error("Failed to get response");
-    }
+    // Jangan kirim jika kosong atau sedang proses
+    if (message === "" || isProcessing) return;
 
-    // Process streaming response
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let responseText = "";
+    isProcessing = true;
+    userInput.disabled = true;
+    sendButton.disabled = true;
 
-    while (true) {
-      const { done, value } = await reader.read();
+    // Tampilkan pesan pengguna
+    addMessageToChat("user", message);
 
-      if (done) {
-        break;
-      }
+    // Bersihkan input dan tampilkan indikator loading
+    userInput.value = "";
+    typingIndicator.style.display = "block";
 
-      // Decode chunk
-      const chunk = decoder.decode(value, { stream: true });
+    chatHistory.push({ role: "user", content: message });
 
+    // Siapkan kotak untuk balasan bot
+    var assistantMessageEl = addMessageToChat("assistant", "...");
+
+    // Kirim request ke API menggunakan metode AJAX klasik
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/chat", true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    xhr.onreadystatechange = function() {
+        // Angka 4 berarti proses request telah selesai
+        if (xhr.readyState === 4) {
+            typingIndicator.style.display = "none";
+            isProcessing = false;
+            userInput.disabled = false;
+            sendButton.disabled = false;
+            userInput.focus();
+
+            if (xhr.status === 200) {
+                // Memproses balasan. Jika API Anda mengirim format SSE per baris, 
+                // kita kumpulkan dan gabungkan semuanya sekaligus saat proses selesai.
+                var responseText = "";
+                var lines = xhr.responseText.split("\n");
+                
+                for (var i = 0; i < lines.length; i++) {
+                    var line = trimString(lines[i]);
+                    if (line !== "") {
+                        try {
+                            var jsonData = JSON.parse(line);
+                            if (jsonData.response) {
+                                responseText += jsonData.response;
+                            }
+                        } catch (e) {
+                            // Abaikan error parsing baris kosong
+                        }
+                    }
+                }
+                
+                assistantMessageEl.innerHTML = responseText;
+                chatHistory.push({ role: "assistant", content: responseText });
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+            } else {
+                assistantMessageEl.innerHTML = "Error processing request.";
+            }
+        }
+    };
+
+    // Penanganan jika internet terputus
+    xhr.onerror = function() {
+        typingIndicator.style.display = "none";
+        isProcessing = false;
+        userInput.disabled = false;
+        sendButton.disabled = false;
+        assistantMessageEl.innerHTML = "Connection error. Please try again.";
+    };
+
+    // Eksekusi kirim data
+    var payload = JSON.stringify({ messages: chatHistory });
+    xhr.send(payload);
+}
       // Process SSE format
       const lines = chunk.split("\n");
       for (const line of lines) {
