@@ -1,201 +1,147 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Xystelsya AI</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        line-height: 1.4;
-        background-color: #e5e5e5;
-        margin: 0;
-        padding: 0;
-      }
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Xystelsya AI</title>
+<style>
+  /* Desain Klasik Memanjang (Tanpa Kotak Ber-scroll) */
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #3016db; /* Latar belakang mengikuti warna obrolan */
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+    line-height: 1.4;
+  }
+  
+  .header {
+    background-color: #ffffff;
+    color: #0f1c73;
+    text-align: center;
+    padding: 12px;
+    border-bottom: 2px solid #2712e0;
+  }
+  .header h1 { margin: 0 0 5px 0; font-size: 20px; }
+  .header p { margin: 0; font-size: 11px; color: #6b7280; }
+  
+  .chat-container {
+    padding: 10px;
+    /* Dihapus: height dan overflow-y. Sekarang obrolan akan memanjang alami ke bawah */
+  }
+  
+  .message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #000000;
+    word-wrap: break-word;
+  }
+  
+  /* Pesan Anda didorong ke kanan menggunakan margin (Super Aman di HP Jadul) */
+  .user-message {
+    background-color: #e0129c;
+    color: #ffffff;
+    margin-left: 15%; 
+    text-align: right;
+  }
+  
+  /* Pesan AI didorong ke kiri */
+  .assistant-message {
+    background-color: #10d2e8;
+    color: #000000;
+    margin-right: 15%;
+  }
+  
+  .status-text {
+    font-size: 12px;
+    font-weight: bold;
+    color: #ffff00; /* Warna kuning agar kontras */
+    text-align: center;
+    padding: 10px;
+    display: none; /* Disembunyikan sampai tombol kirim ditekan */
+  }
+  
+  /* Area Kontrol & Tombol */
+  .controls {
+    background-color: #ffffff;
+    padding: 15px 10px;
+    border-top: 3px solid #2712e0;
+  }
+  
+  input[type="text"] {
+    width: 95%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #2712e0;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+  
+  /* Tombol WAP Asli */
+  input[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    font-weight: bold;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  
+  /* Efek Fokus D-Pad Keypad */
+  input[type="text"]:focus, input[type="submit"]:focus {
+    background-color: #ffffcc;
+    color: #000000;
+    border: 2px solid #ff0000;
+    outline: none;
+  }
+  
+  .btn-send { background-color: #0f1c73; color: white; border: 1px solid #0f1c73; }
+  .btn-refresh { background-color: #59144a; color: white; border: 1px solid #59144a; }
+  .btn-clear { background-color: #d90429; color: white; border: 1px solid #d90429; }
+  
+  .footer {
+    background-color: #ffffff;
+    text-align: center;
+    font-size: 10px;
+    color: #f50ac6;
+    padding: 15px 10px;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Xystelsya</h1>
+    <p>Tasyacore Intelligence System</p>
+  </div>
 
-      .app-wrapper {
-        max-width: 600px;
-        margin: 0 auto;
-        background-color: #ffffff;
-        min-height: 100vh;
-        display: block;
-        position: relative;
-      }
-
-      .header {
-        text-align: center;
-        padding: 12px 10px;
-        border-bottom: 2px solid #2712e0;
-        background-color: #ffffff;
-      }
-
-      .header h1 {
-        font-size: 20px;
-        color: #0f1c73;
-        margin: 0 0 3px 0;
-      }
-      
-      .header p {
-        font-size: 11px;
-        color: #6b7280;
-        margin: 0;
-      }
-
-      .chat-container {
-        padding: 12px;
-        height: 280px; 
-        overflow-y: auto;
-        background-color: #3016db;
-      }
-
-      .clear {
-        clear: both;
-        line-height: 0;
-        height: 0;
-      }
-
-      .message {
-        margin-bottom: 12px;
-        padding: 8px 12px;
-        border-radius: 6px;
-        max-width: 75%;
-        word-wrap: break-word;
-        font-size: 14px;
-      }
-
-      .user-message {
-        background-color: #e0129c;
-        color: #ffffff;
-        float: right;
-        text-align: right;
-      }
-
-      .assistant-message {
-        background-color: #10d2e8;
-        color: #000000;
-        float: left;
-        text-align: left;
-      }
-
-      .typing-indicator {
-        display: none;
-        font-style: italic;
-        color: #ffffff;
-        font-size: 12px;
-        text-align: center;
-        padding: 5px;
-        background-color: #3016db;
-      }
-
-      .message-input-form {
-        padding: 10px;
-        background-color: #ffffff;
-        border-top: 1px solid #2712e0;
-        text-align: center;
-        margin: 0;
-      }
-
-      #user-input {
-        width: 70%;
-        padding: 10px 6px;
-        border: 1px solid #2712e0;
-        border-radius: 4px;
-        box-sizing: border-box;
-        font-size: 14px;
-        vertical-align: middle;
-      }
-
-      #send-button {
-        width: 25%;
-        padding: 10px 0;
-        margin-left: 2%;
-        background-color: #0f1c73;
-        color: white;
-        border: 1px solid #0f1c73;
-        border-radius: 4px;
-        font-weight: bold;
-        font-size: 14px;
-        cursor: pointer;
-        vertical-align: middle;
-      }
-
-      /* Container untuk tombol Refresh dan Clear */
-      .action-container {
-        padding: 5px 10px 10px 10px;
-        text-align: center;
-        background-color: #ffffff;
-        display: block;
-      }
-
-      .btn-action {
-        display: inline-block;
-        width: 45%;
-        margin: 0 1%;
-        padding: 10px 0;
-        color: #ffffff;
-        text-decoration: none;
-        font-weight: bold;
-        font-size: 13px;
-        border-radius: 4px;
-        text-align: center;
-        box-sizing: border-box;
-      }
-
-      .btn-refresh {
-        background-color: #59144a;
-        border: 1px solid #59144a;
-      }
-
-      .btn-clear {
-        background-color: #d90429;
-        border: 1px solid #d90429;
-      }
-
-      #user-input:focus, #send-button:focus, .btn-action:focus {
-        background-color: #ffffcc;
-        color: #000000;
-        border: 2px solid #ff0000;
-        outline: none;
-      }
-
-      .footer {
-        text-align: center;
-        font-size: 10px;
-        color: #f50ac6;
-        padding: 8px;
-        background-color: #ffffff;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="app-wrapper">
-      <div class="header">
-        <h1>Xystelsya</h1>
-        <p>Tasyacore Intelligence System</p>
-      </div>
-
-      <div id="chat-messages" class="chat-container">
-        </div>
-
-      <div class="typing-indicator" id="typing-indicator">
-        Memproses balasan, mohon tunggu...
-      </div>
-
-      <form id="chat-form" action="#" onsubmit="return submitForm();" class="message-input-form">
-        <input type="text" id="user-input" name="message" placeholder="Ketik pertanyaan..." autocomplete="off" />
-        <input type="submit" id="send-button" value="Kirim" />
-      </form>
-      
-      <div class="action-container">
-        <a href="javascript:void(0);" onclick="window.location.reload();" class="btn-action btn-refresh">Refresh Chat</a>
-        <a href="javascript:void(0);" onclick="clearChat();" class="btn-action btn-clear">Hapus Obrolan</a>
-      </div>
-
-      <div class="footer">
-        nS.aB Private Family Media
-      </div>
+  <div id="chat-messages" class="chat-container">
     </div>
+  
+  <div id="status-text" class="status-text"></div>
 
-    <script src="chat.js"></script>
-  </body>
+  <div class="controls">
+    <form onsubmit="return submitChat();">
+      <input type="text" id="user-input" placeholder="Ketik pertanyaan..." autocomplete="off">
+      <input type="submit" value="1. Kirim Pesan" class="btn-send" id="send-button">
+    </form>
+    
+    <br>
+    
+    <form action="?" method="GET">
+      <input type="submit" value="2. Cek Balasan / Refresh Chat" class="btn-refresh">
+    </form>
+    
+    <form onsubmit="return clearChatAction();">
+      <input type="submit" value="Hapus Semua Obrolan" class="btn-clear">
+    </form>
+  </div>
+
+  <div class="footer">nS.aB Private Family Media</div>
+
+  <script src="chat.js"></script>
+</body>
 </html>

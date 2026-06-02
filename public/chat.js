@@ -1,61 +1,54 @@
 /**
- * LLM Chat App (Super Kompatibel untuk Android & HP Keypad WAP Browser)
+ * LLM Chat App (WAP / Keypad Phone Super Fallback Edition)
  */
 
 var chatMessages = document.getElementById("chat-messages");
 var userInput = document.getElementById("user-input");
 var sendButton = document.getElementById("send-button");
-var typingIndicator = document.getElementById("typing-indicator");
+var statusText = document.getElementById("status-text");
 
-var isProcessing = false;
 var chatHistory = [];
 
-// --- UTILITY COOKIE PRIMITIF (Mencegah error JSON di browser WAP lama) ---
+// --- MANAJEMEN COOKIE PRIMITIF ---
 function setChatCookie(historyArray) {
     try {
-        var limitedHistory = historyArray;
-        // Batasi memori untuk hp jadul (maks 6 obrolan terakhir)
-        if (historyArray.length > 6) {
-            limitedHistory = [historyArray[0]];
-            var lastMsgs = historyArray.slice(historyArray.length - 5);
-            for(var x=0; x<lastMsgs.length; x++) { limitedHistory.push(lastMsgs[x]); }
+        var limited = historyArray;
+        // Batas maksimal memori agar browser lawas tidak kehabisan RAM
+        if (historyArray.length > 8) {
+            limited = [historyArray[0]];
+            var last = historyArray.slice(historyArray.length - 7);
+            for(var x=0; x<last.length; x++) limited.push(last[x]);
         }
         
-        // Buat string manual: role:::pesan|||role:::pesan (Menghindari error JSON.stringify)
         var str = "";
-        for (var i = 0; i < limitedHistory.length; i++) {
-            var safeContent = limitedHistory[i].content.replace(/\|\|\|/g, "").replace(/:::/g, "");
-            str += limitedHistory[i].role + ":::" + escape(safeContent);
-            if (i < limitedHistory.length - 1) str += "|||";
+        for (var i = 0; i < limited.length; i++) {
+            var safeContent = limited[i].content.replace(/\|\|\|/g, "").replace(/:::/g, "");
+            str += limited[i].role + ":::" + escape(safeContent);
+            if (i < limited.length - 1) str += "|||";
         }
         
-        var date = new Date();
-        date.setTime(date.getTime() + (24 * 60 * 60 * 1000)); 
-        document.cookie = "xt_chat=" + str + "; expires=" + date.toUTCString() + "; path=/";
+        document.cookie = "xtc_data=" + str + "; max-age=86400; path=/";
     } catch (e) {}
 }
 
 function getChatCookie() {
     try {
-        var nameEQ = "xt_chat=";
         var ca = document.cookie.split(';');
         for (var i = 0; i < ca.length; i++) {
-            var c = ca[i];
-            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) == 0) {
-                var str = c.substring(nameEQ.length, c.length);
+            var c = ca[i].replace(/^\s+|\s+$/g, '');
+            if (c.indexOf("xtc_data=") == 0) {
+                var str = c.substring(9);
                 if (str === "") return null;
                 
-                // Pecah string manual (Menghindari error JSON.parse)
-                var history = [];
+                var arr = [];
                 var parts = str.split("|||");
                 for (var j = 0; j < parts.length; j++) {
                     var p = parts[j].split(":::");
                     if (p.length === 2) {
-                        history.push({ role: p[0], content: unescape(p[1]) });
+                        arr.push({ role: p[0], content: unescape(p[1]) });
                     }
                 }
-                return history;
+                return arr;
             }
         }
     } catch (e) {}
@@ -63,139 +56,107 @@ function getChatCookie() {
 }
 
 // --- FUNGSI HAPUS OBROLAN ---
-function clearChat() {
-    // Matikan cookie dan ulangi halaman
-    document.cookie = "xt_chat=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    window.location.reload();
+function clearChatAction() {
+    document.cookie = "xtc_data=; max-age=0; path=/";
+    window.location.href = "?cleared=1"; // Perintah Native agar browser langsung reload
+    return false;
 }
 
-// --- INITIAL LOAD ---
+// --- INISIALISASI HALAMAN ---
 function initChat() {
     chatHistory = getChatCookie();
     
     if (!chatHistory || chatHistory.length === 0) {
-        chatHistory = [
-            {
-                role: "assistant",
-                content: "This is Xystelsya, 007 Agent, Ready to listen your secret."
-            }
-        ];
+        chatHistory = [{ role: "assistant", content: "This is Xystelsya, 007 Agent, Ready to listen your secret" }];
+        setChatCookie(chatHistory);
     }
     
     chatMessages.innerHTML = "";
     for (var i = 0; i < chatHistory.length; i++) {
-        var msg = chatHistory[i];
-        if (msg.content !== "...") {
-            addMessageVisual(msg.role, msg.content);
-        }
+        addMessageVisual(chatHistory[i].role, chatHistory[i].content);
     }
+    
+    // Secara otomatis arahkan layar ke bagian input paling bawah saat halaman dibuka
+    try {
+        window.scrollTo(0, document.body.scrollHeight);
+    } catch(e) {}
 }
 
 function addMessageVisual(role, content) {
-    var messageEl = document.createElement("div");
-    messageEl.className = "message " + role + "-message";
-    messageEl.innerHTML = content;
-    chatMessages.appendChild(messageEl);
-
-    var clearEl = document.createElement("div");
-    clearEl.className = "clear";
-    chatMessages.appendChild(clearEl);
-
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    return messageEl;
+    var div = document.createElement("div");
+    div.className = "message " + role + "-message";
+    div.innerHTML = content;
+    chatMessages.appendChild(div);
 }
 
-// Ekstraktor Balasan Primitif (Fallback jika browser HP tidak mengenali object JSON API)
-function extractResponseText(lineText) {
-    if (window.JSON && window.JSON.parse) {
-        try { 
-            var d = JSON.parse(lineText); 
-            return d.response ? d.response : ""; 
-        } catch(e) {}
-    } 
-    // Fallback khusus untuk Sony Ericsson & Maui Browser
-    var match = lineText.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+// Alat Ekstrak Manual untuk API Chat
+function extractFallback(txt) {
+    if (window.JSON && JSON.parse) {
+        try { var d = JSON.parse(txt); return d.response || ""; } catch(e) {}
+    }
+    var match = txt.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)"/);
     if (match && match[1]) {
-        var text = match[1];
-        return text.replace(/\\n/g, "<br>").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+        return match[1].replace(/\\n/g, "<br>").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
     }
     return "";
 }
 
-// --- LOGIKA PENGIRIMAN PESAN ---
-function submitForm() {
-    sendMessage();
-    return false; // Cegah browser reload otomatis
-}
-
-function sendMessage() {
+// --- LOGIKA PENGIRIMAN DATA ---
+function submitChat() {
     var rawText = userInput.value;
     var message = rawText.replace(/^\s+|\s+$/g, '');
 
-    if (message === "" || isProcessing) return;
+    if (message === "") return false;
 
-    isProcessing = true;
-    userInput.disabled = true;
-    sendButton.disabled = true;
-
+    // 1. Catat pesan ke layar
     addMessageVisual("user", message);
     chatHistory.push({ role: "user", content: message });
     setChatCookie(chatHistory);
 
+    // 2. Tampilkan teks status ke layar bahwa AI sedang berpikir
     userInput.value = "";
-    typingIndicator.style.display = "block";
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    statusText.style.display = "block";
+    statusText.innerHTML = "Sistem sedang memproses. Jika tulisan ini berubah, silakan klik tombol [Refresh Chat] di bawah.";
+    
+    // Gulir layar ke bagian bawah
+    try { window.scrollTo(0, document.body.scrollHeight); } catch(e) {}
 
-    var assistantMessageEl = addMessageVisual("assistant", "...");
-
+    // 3. Eksekusi Jaringan Latar Belakang
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/chat", true);
     xhr.setRequestHeader("Content-Type", "application/json");
 
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-            typingIndicator.style.display = "none";
-            isProcessing = false;
-            userInput.disabled = false;
-            sendButton.disabled = false;
-            
-            try { userInput.focus(); } catch (err) {}
-
             if (xhr.status === 200) {
-                var responseText = "";
+                var resText = "";
                 var lines = xhr.responseText.split("\n");
-                
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i].replace(/^\s+|\s+$/g, '');
                     if (line !== "") {
-                        responseText += extractResponseText(line);
+                        resText += extractFallback(line);
                     }
                 }
                 
-                if(responseText === "") {
-                    responseText = "Data diterima, namun tidak bisa dibaca oleh browser. Silakan klik Refresh Chat.";
+                if (resText !== "") {
+                    // Ketika jawaban didapat, simpan di memori, dan suruh user refresh!
+                    chatHistory.push({ role: "assistant", content: resText });
+                    setChatCookie(chatHistory);
+                    statusText.innerHTML = "[Balasan Diterima!] Silakan klik tombol 'Cek Balasan / Refresh Chat' di bawah untuk membaca.";
+                } else {
+                    statusText.innerHTML = "Respon kosong dari AI. Silakan klik Refresh Chat untuk memastikan.";
                 }
-
-                assistantMessageEl.innerHTML = responseText;
-                chatHistory.push({ role: "assistant", content: responseText });
-                setChatCookie(chatHistory);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-                
             } else {
-                assistantMessageEl.innerHTML = "Gagal memproses (" + xhr.status + "). Silakan klik Refresh Chat.";
+                statusText.innerHTML = "Gagal memproses (" + xhr.status + "). Coba lagi nanti.";
             }
         }
     };
 
     xhr.onerror = function() {
-        typingIndicator.style.display = "none";
-        isProcessing = false;
-        userInput.disabled = false;
-        sendButton.disabled = false;
-        assistantMessageEl.innerHTML = "Koneksi terputus. Silakan klik Refresh Chat.";
+        statusText.innerHTML = "Koneksi terputus. Silakan klik tombol Refresh Chat lalu coba kirim ulang.";
     };
 
-    // Merakit JSON manual untuk payload API tanpa menggunakan JSON.stringify
+    // Rangkai Data Pengiriman
     var payload = '{"messages":[';
     for(var k = 0; k < chatHistory.length; k++) {
         var safeForJson = chatHistory[k].content.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
@@ -205,7 +166,10 @@ function sendMessage() {
     payload += ']}';
 
     xhr.send(payload);
+
+    // Mencegah halaman langsung reload saat menekan kirim (sangat penting agar background network tetap jalan)
+    return false;
 }
 
-// Inisialisasi saat script dimuat
+// Mulai aplikasi
 initChat();
