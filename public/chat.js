@@ -1,195 +1,175 @@
 /**
- * LLM Chat App Frontend (Versi Kompatibel Ponsel Jadul)
+ * LLM Chat App Frontend (Universal dengan Fitur Cookie Backup)
  */
 
-// DOM elements
 var chatMessages = document.getElementById("chat-messages");
 var userInput = document.getElementById("user-input");
 var sendButton = document.getElementById("send-button");
 var typingIndicator = document.getElementById("typing-indicator");
 
-// Chat state
-var chatHistory = [
-  {
-    role: "assistant",
-    content: "Hello, I'm Xystelsya, How can I help you?"
-  }
-];
 var isProcessing = false;
+var chatHistory = [];
 
-// Event Click untuk tombol Send
-sendButton.onclick = function() {
-    sendMessage();
-};
-
-// Event Enter pada Keypad (opsional, karena pengguna keypad biasanya menekan tombol 'Send')
-userInput.onkeydown = function(e) {
-    var key = e.keyCode || e.which;
-    if (key === 13) {
-        if(e.preventDefault) e.preventDefault();
-        sendMessage();
-        return false;
-    }
-};
-
-/**
- * Menghapus spasi berlebih (pengganti .trim() untuk browser sangat lawas)
- */
-function trimString(str) {
-    return str.replace(/^\s+|\s+$/g, '');
+// --- UTILITY COOKIE (Agar riwayat chat tidak hilang saat ditekan Refresh) ---
+function setChatCookie(historyArray) {
+    try {
+        // Batasi riwayat maksimal 6 pesan terakhir agar muat di memori cookie ponsel jadul (< 4KB)
+        var limitedHistory = historyArray;
+        if (historyArray.length > 6) {
+            var firstMsg = historyArray[0];
+            var lastMessages = historyArray.slice(historyArray.length - 5);
+            limitedHistory = [firstMsg];
+            for (var i = 0; i < lastMessages.length; i++) {
+                limitedHistory.push(lastMessages[i]);
+            }
+        }
+        var str = JSON.stringify(limitedHistory);
+        var date = new Date();
+        date.setTime(date.getTime() + (24 * 60 * 60 * 1000)); // Aktif 1 hari
+        document.cookie = "xystelsya_chat=" + encodeURIComponent(str) + "; expires=" + date.toUTCString() + "; path=/";
+    } catch (e) {}
 }
 
-/**
- * Helper function untuk menambah pesan ke layar
- */
-function addMessageToChat(role, content) {
+function getChatCookie() {
+    try {
+        var nameEQ = "xystelsya_chat=";
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) {
+                var str = decodeURIComponent(c.substring(nameEQ.length, c.length));
+                return JSON.parse(str);
+            }
+        }
+    } catch (e) {}
+    return null;
+}
+
+// --- INITIAL LOAD (Memuat Chat Pertama Kali) ---
+function initChat() {
+    chatHistory = getChatCookie();
+    
+    // Jika cookie kosong, buat pesan sambutan pertama
+    if (!chatHistory || chatHistory.length === 0) {
+        chatHistory = [
+            {
+                role: "assistant",
+                content: "Hello, I'm Xystelsya, How can I help you?"
+            }
+        ];
+    }
+    
+    // Tampilkan semua riwayat dari cookie ke layar
+    chatMessages.innerHTML = "";
+    for (var i = 0; i < chatHistory.length; i++) {
+        var msg = chatHistory[i];
+        if (msg.content !== "...") {
+            addMessageVisual(msg.role, msg.content);
+        }
+    }
+}
+
+function addMessageVisual(role, content) {
     var messageEl = document.createElement("div");
     messageEl.className = "message " + role + "-message";
     messageEl.innerHTML = content;
-    
     chatMessages.appendChild(messageEl);
 
-    // Clearfix agar layout float tidak berantakan
+    // Clearfix pemisah float agar layout tidak menumpuk
     var clearEl = document.createElement("div");
     clearEl.className = "clear";
     chatMessages.appendChild(clearEl);
 
-    // Scroll otomatis ke bawah
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    
-    return messageEl; // Mengembalikan elemen jika perlu diperbarui nanti
+    return messageEl;
 }
 
-/**
- * Mengirim pesan dengan AJAX Klasik (XMLHttpRequest)
- */
-function sendMessage() {
-    var message = trimString(userInput.value);
+// --- LOGIKA PENGIRIMAN PESAN ---
+function triggerSend(e) {
+    if (e && e.preventDefault) {
+        e.preventDefault(); // Mencegah reload halaman langsung di Android
+    }
+    sendMessage();
+    return false; // Menghentikan submit form tradisional agar AJAX berjalan
+}
 
-    // Jangan kirim jika kosong atau sedang proses
+function sendMessage() {
+    var rawText = userInput.value;
+    // Fungsi trim manual agar kompatibel dengan JavaScript versi sangat tua
+    var message = rawText.replace(/^\s+|\s+$/g, '');
+
     if (message === "" || isProcessing) return;
 
     isProcessing = true;
     userInput.disabled = true;
     sendButton.disabled = true;
 
-    // Tampilkan pesan pengguna
-    addMessageToChat("user", message);
+    // Tampilkan pesan user ke layar dan simpan ke cookie
+    addMessageVisual("user", message);
+    chatHistory.push({ role: "user", content: message });
+    setChatCookie(chatHistory);
 
-    // Bersihkan input dan tampilkan indikator loading
     userInput.value = "";
     typingIndicator.style.display = "block";
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    chatHistory.push({ role: "user", content: message });
+    // Siapkan wadah kosong untuk balasan bot berikutnya
+    var assistantMessageEl = addMessageVisual("assistant", "...");
 
-    // Siapkan kotak untuk balasan bot
-    var assistantMessageEl = addMessageToChat("assistant", "...");
-
-    // Kirim request ke API menggunakan metode AJAX klasik
+    // Koneksi API via AJAX Klasik
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/chat", true);
     xhr.setRequestHeader("Content-Type", "application/json");
 
     xhr.onreadystatechange = function() {
-        // Angka 4 berarti proses request telah selesai
         if (xhr.readyState === 4) {
             typingIndicator.style.display = "none";
             isProcessing = false;
             userInput.disabled = false;
             sendButton.disabled = false;
-            userInput.focus();
+            
+            try { userInput.focus(); } catch (err) {}
 
             if (xhr.status === 200) {
-                // Memproses balasan. Jika API Anda mengirim format SSE per baris, 
-                // kita kumpulkan dan gabungkan semuanya sekaligus saat proses selesai.
                 var responseText = "";
                 var lines = xhr.responseText.split("\n");
                 
                 for (var i = 0; i < lines.length; i++) {
-                    var line = trimString(lines[i]);
+                    var line = lines[i].replace(/^\s+|\s+$/g, '');
                     if (line !== "") {
                         try {
                             var jsonData = JSON.parse(line);
                             if (jsonData.response) {
                                 responseText += jsonData.response;
                             }
-                        } catch (e) {
-                            // Abaikan error parsing baris kosong
-                        }
+                        } catch (e) {}
                     }
                 }
                 
+                // Masukkan teks balasan ke layar dan perbarui cookie riwayat
                 assistantMessageEl.innerHTML = responseText;
                 chatHistory.push({ role: "assistant", content: responseText });
+                setChatCookie(chatHistory);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 
             } else {
-                assistantMessageEl.innerHTML = "Error processing request.";
+                assistantMessageEl.innerHTML = "Gagal memproses. Silakan tekan tombol Refresh Chat.";
             }
         }
     };
 
-    // Penanganan jika internet terputus
     xhr.onerror = function() {
         typingIndicator.style.display = "none";
         isProcessing = false;
         userInput.disabled = false;
         sendButton.disabled = false;
-        assistantMessageEl.innerHTML = "Connection error. Please try again.";
+        assistantMessageEl.innerHTML = "Koneksi terputus. Silakan tunggu sebentar lalu klik tombol Refresh Chat.";
     };
 
-    // Eksekusi kirim data
     var payload = JSON.stringify({ messages: chatHistory });
     xhr.send(payload);
 }
-      // Process SSE format
-      const lines = chunk.split("\n");
-      for (const line of lines) {
-        try {
-          const jsonData = JSON.parse(line);
-          if (jsonData.response) {
-            // Append new content to existing text
-            responseText += jsonData.response;
-            assistantMessageEl.querySelector("p").textContent = responseText;
 
-            // Scroll to bottom
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-          }
-        } catch (e) {
-          console.error("Error parsing JSON:", e);
-        }
-      }
-    }
-
-    // Add completed response to chat history
-    chatHistory.push({ role: "assistant", content: responseText });
-  } catch (error) {
-    console.error("Error:", error);
-    addMessageToChat(
-      "assistant",
-      "Sorry, there was an error processing your request.",
-    );
-  } finally {
-    // Hide typing indicator
-    typingIndicator.classList.remove("visible");
-
-    // Re-enable input
-    isProcessing = false;
-    userInput.disabled = false;
-    sendButton.disabled = false;
-    userInput.focus();
-  }
-}
-
-/**
- * Helper function to add message to chat
- */
-function addMessageToChat(role, content) {
-  const messageEl = document.createElement("div");
-  messageEl.className = `message ${role}-message`;
-  messageEl.innerHTML = `<p>${content}</p>`;
-  chatMessages.appendChild(messageEl);
-
-  // Scroll to bottom
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+// Jalankan inisialisasi obrolan saat halaman selesai dimuat
+initChat();
