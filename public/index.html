@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Xystelsya AI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+      background-color: #3016db;
+      color: #370870;
+      margin: 0;
+      padding: 8px;
+    }
+    header {
+      text-align: center;
+      background-color: #ffffff;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #2712e0;
+    }
+    header h1 { font-size: 1.4rem; color: #0f1c73; margin: 0; }
+    header p { font-size: 0.8rem; color: #6b7280; margin: 3px 0 0 0; }
+    
+    .chat-messages {
+      background-color: #3016db;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+    .message {
+      margin-bottom: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      color: #000000;
+      font-size: 14px;
+    }
+    .user-message {
+      background-color: #e0129c;
+      color: #ffffff;
+      margin-left: 15%;
+      text-align: right;
+    }
+    .assistant-message {
+      background-color: #10d2e8;
+      margin-right: 15%;
+      text-align: left;
+    }
+    .message p { margin: 0; }
+    
+    .message-input {
+      background-color: #ffffff;
+      padding: 12px;
+      border: 1px solid #2712e0;
+      border-radius: 6px;
+    }
+    textarea {
+      width: 95%;
+      padding: 8px;
+      border: 1px solid #2712e0;
+      font-family: inherit;
+      font-size: 14px;
+      display: block;
+      margin-bottom: 8px;
+    }
+    input[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      background-color: #0f1c73;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn-clear { background-color: #59144a !important; margin-top: 6px; }
+    footer {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #f50ac6;
+      background-color: #ffffff;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Xystelsya</h1>
+    <p>Tasyacore Intelligence System</p>
+  </header>
+
+  <div class="chat-messages">
+    {{CHAT_HISTORY_HTML}}
+  </div>
+
+  <div class="message-input">
+    <form action="/kirim" method="POST">
+      <input type="hidden" name="chat_history" value='{{CHAT_HISTORY_JSON}}' />
+      <textarea name="pesan_user" placeholder="Type what you want to ask..." rows="2" required></textarea>
+      <input type="submit" value="Send Message" />
+    </form>
+
+    <form action="/reset" method="POST">
+      <input type="submit" value="Clear Chat History" class="btn-clear" />
+    </form>
+  </div>
+
+  <footer>
+    <p>nS.aB Private Family Media</p>
+  </footer>
+</body>
+</html>
