@@ -1,48 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Xystelsya AI</title>
     <style>
-      /* Layout Klasik untuk Ponsel Jadul */
+      /* CSS Klasik Universal - Kompatibel Android & HP Jadul */
       body {
-        font-family: sans-serif;
+        font-family: Arial, sans-serif;
         line-height: 1.4;
-        color: #370870;
+        background-color: #e5e5e5;
         margin: 0;
-        padding: 5px;
+        padding: 0;
+      }
+
+      .app-wrapper {
+        max-width: 600px;
+        margin: 0 auto;
         background-color: #ffffff;
-        font-size: 14px;
+        min-height: 100vh;
+        display: block;
+        position: relative;
       }
 
       .header {
         text-align: center;
-        margin-bottom: 10px;
-        padding-bottom: 5px;
+        padding: 12px 10px;
         border-bottom: 2px solid #2712e0;
+        background-color: #ffffff;
       }
 
       .header h1 {
-        font-size: 18px;
+        font-size: 20px;
         color: #0f1c73;
-        margin: 5px 0;
+        margin: 0 0 3px 0;
       }
       
       .header p {
-        font-size: 12px;
+        font-size: 11px;
+        color: #6b7280;
         margin: 0;
       }
 
       .chat-container {
-        border: 1px solid #2712e0;
+        padding: 12px;
+        height: 280px; 
+        overflow-y: auto;
         background-color: #3016db;
-        padding: 5px;
-        height: 250px; /* Ukuran pas untuk layar jadul */
-        overflow-y: scroll;
       }
 
-      /* Clearfix untuk float */
       .clear {
         clear: both;
         line-height: 0;
@@ -50,11 +56,12 @@
       }
 
       .message {
-        margin-bottom: 10px;
-        padding: 8px;
-        border-radius: 5px;
-        width: 80%;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        max-width: 75%;
         word-wrap: break-word;
+        font-size: 14px;
       }
 
       .user-message {
@@ -68,156 +75,119 @@
         background-color: #10d2e8;
         color: #000000;
         float: left;
+        text-align: left;
       }
 
       .typing-indicator {
         display: none;
         font-style: italic;
-        color: #6b7280;
-        text-align: center;
+        color: #ffffff;
         font-size: 12px;
-        margin-top: 10px;
+        text-align: center;
+        padding: 5px;
+        background-color: #3016db;
       }
 
-      .message-input {
-        margin-top: 10px;
+      /* Form Kontrol berbasis HTML Murni agar Keypad berfungsi */
+      .message-input-form {
+        padding: 10px;
+        background-color: #ffffff;
+        border-top: 1px solid #2712e0;
         text-align: center;
+        margin: 0;
       }
 
       #user-input {
-        width: 95%;
-        box-sizing: border-box;
-        padding: 8px;
+        width: 70%;
+        padding: 10px 6px;
         border: 1px solid #2712e0;
-        margin-bottom: 5px;
-        height: 40px;
+        border-radius: 4px;
+        box-sizing: border-box;
         font-size: 14px;
+        vertical-align: middle;
       }
 
       #send-button {
-        width: 95%;
-        padding: 10px;
+        width: 25%;
+        padding: 10px 0;
+        margin-left: 2%;
         background-color: #0f1c73;
         color: white;
-        border: none;
+        border: 1px solid #0f1c73;
+        border-radius: 4px;
         font-weight: bold;
         font-size: 14px;
+        cursor: pointer;
+        vertical-align: middle;
       }
 
-      /* Highlight tebal saat tombol/input disorot D-Pad Keypad */
-      #user-input:focus, #send-button:focus {
-        border: 2px solid #59144a;
-        background-color: #eeeeee;
+      /* Tombol Navigasi Manual Refresh */
+      .action-container {
+        padding: 5px 10px 10px 10px;
+        text-align: center;
+        background-color: #ffffff;
       }
-      
-      #send-button:focus {
+
+      .refresh-button {
+        display: block;
+        width: 97%;
+        margin: 0 auto;
+        padding: 10px 0;
         background-color: #59144a;
         color: #ffffff;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 14px;
+        border-radius: 4px;
+        text-align: center;
+        border: 1px solid #59144a;
+      }
+
+      /* Efek fokus saat disorot D-Pad HP Jadul / Kursor */
+      #user-input:focus, #send-button:focus, .refresh-button:focus {
+        background-color: #ffffcc;
+        color: #000000;
+        border: 2px solid #ff0000;
+        outline: none;
       }
 
       .footer {
-        margin-top: 15px;
         text-align: center;
         font-size: 10px;
         color: #f50ac6;
+        padding: 8px;
+        background-color: #ffffff;
       }
     </style>
   </head>
   <body>
-    <div class="header">
-      <h1>Xystelsya</h1>
-      <p>Tasyacore System</p>
-    </div>
-
-    <div id="chat-messages" class="chat-container">
-      <div class="message assistant-message">
-        Hello, I'm Xystelsya, How can I help you?
+    <div class="app-wrapper">
+      <div class="header">
+        <h1>Xystelsya</h1>
+        <p>Tasyacore Intelligence System</p>
       </div>
-      <div class="clear"></div>
-    </div>
 
-    <div class="typing-indicator" id="typing-indicator">
-      Xystelsya is thinking...
-    </div>
-
-    <div class="message-input">
-      <textarea id="user-input" placeholder="Type here..."></textarea>
-      <button id="send-button">Send</button>
-    </div>
-
-    <div class="footer">
-      nS.aB Private Family Media
-    </div>
-
-    <script src="chat.js"></script>
-  </body>
-</html>        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-
-      #send-button:hover {
-        background-color: var(--primary-hover);
-      }
-
-      #send-button:disabled {
-        background-color: var(--text-light);
-        cursor: not-allowed;
-      }
-
-      .typing-indicator {
-        display: none;
-        margin-bottom: 1rem;
-        font-style: italic;
-        color: var(--text-light);
-      }
-
-      .typing-indicator.visible {
-        display: block;
-      }
-
-      footer {
-        margin-top: 1rem;
-        text-align: center;
-        font-size: 0.85rem;
-        color: #f50ac6;
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1>Xystelsya</h1>
-      <p>Tasyacore Intelligence System</p>
-    </header>
-
-    <div class="chat-container">
-      <div id="chat-messages" class="chat-messages">
-        <div class="message assistant-message">
-          <p>
-            Hello, I'm Xystelsya, How can I help you?
-          </p>
+      <div id="chat-messages" class="chat-container">
         </div>
-      </div>
 
       <div class="typing-indicator" id="typing-indicator">
-        Xystelsya is thinking about it, please wait...
+        Memproses jawaban, silakan tunggu...
       </div>
 
-      <div class="message-input">
-        <textarea
-          id="user-input"
-          placeholder="Type what you want to ask..."
-          rows="1"
-          autofocus
-        ></textarea>
-        <button id="send-button">Send</button>
+      <form id="chat-form" action="." method="get" onsubmit="return triggerSend(event);" class="message-input-form">
+        <input type="text" id="user-input" name="message" placeholder="Ketik pertanyaan..." autocomplete="off" />
+        <input type="submit" id="send-button" value="Kirim" />
+      </form>
+      
+      <div class="action-container">
+        <a href="." class="refresh-button">Cek Balasan / Refresh Chat</a>
+      </div>
+
+      <div class="footer">
+        nS.aB Private Family Media
       </div>
     </div>
 
-    <footer>
-      <p>nS.aB Private Family Media</p>
-    </footer>
-
-    <!-- Chat app script -->
     <script src="chat.js"></script>
   </body>
 </html>
