@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#070C09">
 <title>Xystelsya AI</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* ============================================================
      PALETTE — terminal / CRT phosphor theme
@@ -24,8 +21,11 @@
                               marks "you" vs the system)
      danger        #E15A4C
 
-     Everything is monospace now ("IBM Plex Mono", falls back to
-     the system monospace stack if the font fails to load).
+     Font is the device's own built-in monospace (no web font,
+     no network fetch) — that's what was making text slow to
+     appear on Tizen: every extra font request is a blocking
+     round-trip before anything can paint. A local monospace
+     font still reads as "terminal" and now shows instantly.
   ============================================================ */
 
   * { box-sizing: border-box; -webkit-box-sizing: border-box; }
@@ -37,7 +37,7 @@
   }
 
   body {
-    font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
     background-color: #070C09;
     color: #8FE7A8;
     line-height: 1.5;
