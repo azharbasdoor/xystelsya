@@ -1,35 +1,31 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0B0F1A">
+<meta name="theme-color" content="#070C09">
 <title>Xystelsya AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* ============================================================
-     PALETTE (kept as plain hex, not CSS variables — older Tizen
-     WebKit builds on feature phones don't reliably support
-     custom properties, so this trades a bit of DRY-ness for
-     guaranteed rendering on the oldest target devices)
+     PALETTE — terminal / CRT phosphor theme
+     (plain hex, not CSS variables — older Tizen WebKit builds
+     don't reliably support custom properties)
 
-     bg deep      #0B0F1A
-     panel        #121826
-     panel border #212B42
-     accent amber #E9A23B  (signature colour — "secure channel")
-     accent teal  #35D0C0
-     text primary #EDEFF6
-     text muted   #8892AA
-     bubble user  gradient #275a52 → #1B4640 / text #E9FBF3
-     bubble agent gradient #1C264A → #151C34 / thin amber border
-     danger       #E15A4C
+     bg terminal   #070C09  (near-black, faint green cast)
+     panel         #0D1710
+     panel border  #1E3B22
+     green bright  #39FF6B  (prompts, cursor, accents, glow)
+     green body    #8FE7A8  (message text — easier on the eyes
+                              than pure neon for longer reading)
+     teal (user)   #35D0C0  (kept from the previous identity —
+                              marks "you" vs the system)
+     danger        #E15A4C
 
-     type: "IBM Plex Mono" for brand/labels, "IBM Plex Sans" for
-     body copy — both fall back to the system stack if the font
-     fails to load (offline / old device), so nothing breaks.
+     Everything is monospace now ("IBM Plex Mono", falls back to
+     the system monospace stack if the font fails to load).
   ============================================================ */
 
   * { box-sizing: border-box; -webkit-box-sizing: border-box; }
@@ -41,16 +37,11 @@
   }
 
   body {
-    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #0B0F1A;
-    background-image: radial-gradient(circle at 50% 0%, #101528 0%, #0B0F1A 60%);
-    color: #EDEFF6;
+    font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    background-color: #070C09;
+    color: #8FE7A8;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-  }
-
-  .mono {
-    font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
   }
 
   .sr-only {
@@ -63,9 +54,12 @@
 
   /* App shell: fills the viewport, header/controls fixed in place,
      the message thread is the only part that scrolls. On wider
-     screens it becomes a centered, framed "device" card instead
-     of stretching edge to edge. */
+     screens it becomes a centered terminal window instead of
+     stretching edge to edge. A very faint scanline overlay runs
+     across the whole shell for the CRT feel — cheap gradients,
+     no images, so it stays light on old hardware. */
   .app-shell {
+    position: relative;
     display: -webkit-flex;
     display: flex;
     -webkit-flex-direction: column;
@@ -73,62 +67,122 @@
     min-height: 100%;
     max-width: 480px;
     margin: 0 auto;
-    background-color: #0B0F1A;
+    background-color: #070C09;
+  }
+
+  .app-shell:before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgba(57,255,107,0.035) 0px,
+      rgba(57,255,107,0.035) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    z-index: 5;
   }
 
   @media (min-width: 560px) {
-    html, body { background-color: #05070D; }
+    html, body { background-color: #030503; }
     .app-shell {
       min-height: 92vh;
       margin: 4vh auto;
-      border: 1px solid #212B42;
-      border-radius: 18px;
+      border: 1px solid #1E3B22;
+      border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+      box-shadow: 0 0 0 1px #0D1710, 0 30px 80px rgba(0,0,0,0.6), 0 0 60px rgba(57,255,107,0.05);
     }
   }
 
-  /* ---------- header ---------- */
-  .header {
+  /* ---------- terminal title bar ---------- */
+  .term-bar {
     -webkit-flex-shrink: 0;
     flex-shrink: 0;
     display: -webkit-flex;
     display: flex;
     -webkit-align-items: center;
     align-items: center;
-    padding: 14px 16px;
-    background-color: #121826;
-    border-bottom: 1px solid #212B42;
+    padding: 8px 12px;
+    background-color: #0A130C;
+    border-bottom: 1px solid #1E3B22;
+  }
+
+  .term-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 6px;
+    display: inline-block;
+  }
+  .dot-red { background-color: #E15A4C; }
+  .dot-yellow { background-color: #E9C23B; }
+  .dot-green { background-color: #39FF6B; }
+
+  .term-bar-title {
+    -webkit-flex: 1;
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: #4A7A57;
+    margin-right: 33px; /* balances the dots on the left so the title is visually centered */
+  }
+
+  /* ---------- header / brand ---------- */
+  .header {
+    -webkit-flex-shrink: 0;
+    flex-shrink: 0;
+    padding: 14px 16px 12px 16px;
+    background-color: #0D1710;
+    border-bottom: 1px solid #1E3B22;
+  }
+
+  .prompt-row {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-align-items: center;
+    align-items: center;
   }
 
   .brand-mark {
-    width: 36px;
-    height: 36px;
-    line-height: 36px;
+    width: 34px;
+    height: 34px;
+    line-height: 32px;
     text-align: center;
-    border-radius: 9px;
-    background-color: #E9A23B;
-    color: #1B1206;
-    font-weight: bold;
-    font-size: 16px;
+    border-radius: 4px;
+    background-color: #0A130C;
+    border: 1px solid #39FF6B;
+    color: #39FF6B;
+    font-weight: 700;
+    font-size: 14px;
     margin-right: 12px;
     -webkit-flex-shrink: 0;
     flex-shrink: 0;
+    text-shadow: 0 0 6px rgba(57,255,107,0.65);
   }
 
   .brand-text h1 {
     margin: 0;
-    font-size: 15px;
-    letter-spacing: 2px;
+    font-size: 16px;
+    letter-spacing: 3px;
     font-weight: 700;
+    color: #39FF6B;
+    text-shadow: 0 0 8px rgba(57,255,107,0.45);
+  }
+
+  .brand-text h1:after {
+    content: "_";
+    animation: blink 1.1s steps(1) infinite;
+    -webkit-animation: blink 1.1s steps(1) infinite;
   }
 
   .brand-text p {
-    margin: 2px 0 0 0;
-    font-size: 10.5px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #8892AA;
+    margin: 3px 0 0 0;
+    font-size: 11px;
+    color: #4A7A57;
   }
 
   /* ---------- status / loading indicator ---------- */
@@ -141,11 +195,11 @@
     font-size: 11px;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: #E9A23B;
+    color: #39FF6B;
     text-align: center;
     padding: 8px 10px;
-    background-color: #171006;
-    border-bottom: 1px dashed #E9A23B;
+    background-color: #0A130C;
+    border-bottom: 1px dashed #1E3B22;
   }
 
   .status-text:before {
@@ -154,11 +208,11 @@
     -webkit-animation: blink 1.1s steps(1) infinite;
   }
 
-  @keyframes blink { 50% { opacity: 0.25; } }
-  @-webkit-keyframes blink { 50% { opacity: 0.25; } }
+  @keyframes blink { 50% { opacity: 0.15; } }
+  @-webkit-keyframes blink { 50% { opacity: 0.15; } }
 
   @media (prefers-reduced-motion: reduce) {
-    .status-text:before { animation: none; -webkit-animation: none; }
+    .status-text:before, .brand-text h1:after { animation: none; -webkit-animation: none; }
   }
 
   /* ---------- message thread ---------- */
@@ -168,37 +222,50 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 16px 14px;
-    background-color: #090D17;
-    background-image:
-      radial-gradient(rgba(233,162,59,0.10) 1px, transparent 1.4px),
-      radial-gradient(rgba(53,208,192,0.05) 1px, transparent 1.4px);
-    background-size: 24px 24px, 24px 24px;
-    background-position: 0 0, 12px 12px;
+    background-color: #060A07;
+    background-image: linear-gradient(rgba(57,255,107,0.05) 1px, transparent 1px),
+                       linear-gradient(90deg, rgba(57,255,107,0.05) 1px, transparent 1px);
+    background-size: 26px 26px, 26px 26px;
   }
 
   .message {
-    max-width: 82%;
+    max-width: 86%;
     margin-bottom: 14px;
-    padding: 11px 14px;
-    border-radius: 18px;
-    font-size: 15px;
+    padding: 9px 12px;
+    border-radius: 3px;
+    font-size: 14px;
     word-wrap: break-word;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.35), 0 6px 16px rgba(0,0,0,0.28);
+    background-color: #0A130C;
+    border-left: 2px solid #1E3B22;
+  }
+
+  .message:before {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
   }
 
   .user-message {
-    background-image: linear-gradient(155deg, #275a52 0%, #1B4640 100%);
-    color: #E9FBF3;
+    color: #CFF7EC;
     margin-left: auto;
-    border-bottom-right-radius: 5px;
+    border-left: 2px solid #35D0C0;
+  }
+  .user-message:before {
+    content: "you@agent:~$";
+    color: #35D0C0;
   }
 
   .assistant-message {
-    background-image: linear-gradient(155deg, #1C264A 0%, #151C34 100%);
-    color: #E7E9F5;
+    color: #B9F5CB;
     margin-right: auto;
-    border: 1px solid rgba(233,162,59,0.28);
-    border-bottom-left-radius: 5px;
+    border-left: 2px solid #39FF6B;
+  }
+  .assistant-message:before {
+    content: "xystelsya::";
+    color: #39FF6B;
+    text-shadow: 0 0 6px rgba(57,255,107,0.5);
   }
 
   /* ---------- controls ---------- */
@@ -206,13 +273,29 @@
     -webkit-flex-shrink: 0;
     flex-shrink: 0;
     padding: 12px 14px 10px 14px;
-    background-color: #121826;
-    border-top: 1px solid #212B42;
+    background-color: #0D1710;
+    border-top: 1px solid #1E3B22;
   }
 
   .send-form {
     display: -webkit-flex;
     display: flex;
+    -webkit-align-items: stretch;
+    align-items: stretch;
+  }
+
+  .prompt-symbol {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-align-items: center;
+    align-items: center;
+    padding: 0 8px 0 10px;
+    background-color: #070C09;
+    border: 1px solid #1E3B22;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    color: #39FF6B;
+    font-size: 15px;
   }
 
   input[type="text"] {
@@ -221,37 +304,42 @@
     -webkit-flex: 1;
     flex: 1;
     min-width: 0;
-    padding: 11px 12px;
+    padding: 11px 10px;
     font-size: 16px;
-    border: 1px solid #212B42;
-    border-radius: 10px 0 0 10px;
-    background-color: #0B0F1A;
-    color: #EDEFF6;
+    font-family: inherit;
+    border: 1px solid #1E3B22;
+    border-left: none;
+    border-radius: 0;
+    background-color: #070C09;
+    color: #EAFBEF;
+    caret-color: #39FF6B;
   }
 
-  input[type="text"]::-webkit-input-placeholder { color: #5A6480; }
-  input[type="text"]::placeholder { color: #5A6480; }
+  input[type="text"]::-webkit-input-placeholder { color: #3E5C46; }
+  input[type="text"]::placeholder { color: #3E5C46; }
 
   input[type="text"]:focus {
     outline: none;
-    border-color: #E9A23B;
-    box-shadow: 0 0 0 2px rgba(233,162,59,0.35);
+    border-color: #39FF6B;
   }
+  input[type="text"]:focus + input[type="submit"] { border-color: #39FF6B; }
 
   .send-form input[type="submit"] {
     -webkit-appearance: none;
     appearance: none;
-    border: none;
-    border-radius: 0 10px 10px 0;
-    padding: 0 18px;
-    font-size: 14px;
-    font-weight: bold;
-    background-color: #E9A23B;
-    color: #1B1206;
+    border: 1px solid #39FF6B;
+    border-radius: 0 4px 4px 0;
+    padding: 0 16px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background-color: #39FF6B;
+    color: #04140A;
     cursor: pointer;
   }
 
-  .send-form input[type="submit"]:active { background-color: #D18F2F; }
+  .send-form input[type="submit"]:active { background-color: #2CDB59; }
 
   .secondary-actions {
     display: -webkit-flex;
@@ -266,11 +354,12 @@
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    padding: 9px 6px;
-    font-size: 12.5px;
-    font-weight: bold;
+    padding: 8px 6px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 700;
     letter-spacing: 0.3px;
-    border-radius: 8px;
+    border-radius: 3px;
     cursor: pointer;
     background-color: transparent;
   }
@@ -279,17 +368,19 @@
     border: 1px solid #2C6E68;
     color: #35D0C0;
   }
-  .btn-refresh:active { background-color: #10221F; }
+  .btn-refresh:before { content: "[ "; }
+  .btn-refresh:after { content: " ]"; }
+  .btn-refresh:active { background-color: #0F1F1C; }
 
   .btn-clear {
     border: 1px solid #6E3530;
     color: #E15A4C;
   }
-  .btn-clear:active { background-color: #221211; }
+  .btn-clear:active { background-color: #1C1110; }
 
   input[type="submit"]:focus,
   input[type="text"]:focus {
-    outline: 2px solid #E9A23B;
+    outline: 2px solid #39FF6B;
     outline-offset: 1px;
   }
 
@@ -300,24 +391,35 @@
     text-align: center;
     font-size: 10px;
     letter-spacing: 0.5px;
-    color: #5A6480;
+    color: #3E5C46;
     padding: 10px;
-    background-color: #121826;
+    background-color: #0A130C;
   }
+
+  .footer:before { content: "# "; }
 </style>
 </head>
 <body>
   <div class="app-shell">
 
+    <div class="term-bar">
+      <span class="term-dot dot-red"></span>
+      <span class="term-dot dot-yellow"></span>
+      <span class="term-dot dot-green"></span>
+      <span class="term-bar-title">xystelsya — secure_channel — 80x24</span>
+    </div>
+
     <header class="header">
-      <div class="brand-mark mono" aria-hidden="true">X</div>
-      <div class="brand-text">
-        <h1 class="mono">XYSTELSYA</h1>
-        <p>Tasyacore Intelligence System</p>
+      <div class="prompt-row">
+        <div class="brand-mark" aria-hidden="true">&gt;_</div>
+        <div class="brand-text">
+          <h1>XYSTELSYA</h1>
+          <p># Tasyacore Intelligence System</p>
+        </div>
       </div>
     </header>
 
-    <div id="status-text" class="status-text mono">Memuat...</div>
+    <div id="status-text" class="status-text">Memuat...</div>
 
     <main id="chat-messages" class="chat-container">
       <div class="message assistant-message" id="first-msg">This is Xystelsya, 007 Agent, Ready to listen your secret.</div>
@@ -326,16 +428,17 @@
     <div class="controls">
       <form onsubmit="return eksekusiKirim();" action="javascript:void(0);" class="send-form">
         <label for="user-input" class="sr-only">Ketik pesan</label>
-        <input type="text" id="user-input" placeholder="Ketik pertanyaan..." autocomplete="off">
-        <input type="submit" value="Kirim" aria-label="Kirim pesan">
+        <span class="prompt-symbol" aria-hidden="true">&gt;</span>
+        <input type="text" id="user-input" placeholder="ketik_pertanyaan..." autocomplete="off">
+        <input type="submit" value="RUN" aria-label="Kirim pesan">
       </form>
 
       <div class="secondary-actions">
         <form action="?" method="GET" class="secondary-form">
-          <input type="submit" value="Cek Balasan" class="btn-refresh" aria-label="Cek balasan dan refresh chat">
+          <input type="submit" value="refresh --check" class="btn-refresh" aria-label="Cek balasan dan refresh chat">
         </form>
         <form onsubmit="return eksekusiHapus();" action="javascript:void(0);" class="secondary-form">
-          <input type="submit" value="Hapus Obrolan" class="btn-clear" aria-label="Hapus semua obrolan">
+          <input type="submit" value="rm -rf chat/" class="btn-clear" aria-label="Hapus semua obrolan">
         </form>
       </div>
     </div>
