@@ -196,7 +196,7 @@ function eksekusiKirim() {
                             chatHistory.push({ role: "assistant", content: teksAi });
                         }
                         simpanData(chatHistory);
-                        tulisStatus("[BERHASIL] Balasan masuk! Silakan klik tombol '2. Cek Balasan / Refresh Chat' di bawah.", false);
+                        tulisStatus("[BERHASIL] Balasan masuk! Silakan klik refresh --check", false);
                         suksesTerbaca = true;
                     }
                 }
@@ -205,15 +205,15 @@ function eksekusiKirim() {
             if (xhr.readyState === 4 && !suksesTerbaca) {
                 // Jika server tetap membalas dengan status aneh (misal gateway operator mengubah kode HTTP menjadi 0)
                 if (xhr.status === 200 || xhr.status === 201 || xhr.status === 0) {
-                    tulisStatus("Pesan terkirim. Harap klik tombol '2. Cek Balasan / Refresh Chat' untuk melihat hasil.", false);
+                    tulisStatus("Pesan terkirim. Silakan klik refresh --check untuk melihat hasil.", false);
                 } else {
-                    tulisStatus("[GAGAL] Server Failure (Kode Error: " + xhr.status + "). Coba klik Refresh Chat lalu ketik ulang.", true);
+                    tulisStatus("[GAGAL] Server Failure (Kode Error: " + xhr.status + "). Coba klik refresh --check lalu ketik ulang.", true);
                 }
             }
         };
 
         xhr.onerror = function() {
-            tulisStatus("Gangguan sinyal/WAP Gateway. Klik Refresh Chat lalu coba lagi.", true);
+            tulisStatus("Gangguan sinyal/WAP Gateway. Klik refresh --check lalu coba lagi.", true);
         };
 
         xhr.send(payload);
