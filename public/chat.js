@@ -5,14 +5,24 @@
 var chatMessages = document.getElementById("chat-messages");
 var userInput = document.getElementById("user-input");
 var statusText = document.getElementById("status-text");
+var statusTextBawah = document.getElementById("status-text-bottom");
 
 var chatHistory = [];
 
 function tulisStatus(pesan, isError) {
+    var warna = isError ? "#ff4444" : "#ffff00";
+
     statusText.style.display = "block";
     statusText.innerHTML = pesan;
-    if (isError) statusText.style.color = "#ff4444";
-    else statusText.style.color = "#ffff00";
+    statusText.style.color = warna;
+
+    // Tampilkan juga di bagian bawah (dekat kolom input) supaya
+    // pengguna tidak perlu scroll ke atas untuk melihat status
+    if (statusTextBawah) {
+        statusTextBawah.style.display = "block";
+        statusTextBawah.innerHTML = pesan;
+        statusTextBawah.style.color = warna;
+    }
 }
 
 // --- ENGINE MEMORI PRIMITIF ---

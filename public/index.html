@@ -208,6 +208,11 @@
     -webkit-animation: blink 1.1s steps(1) infinite;
   }
 
+  .status-text-bottom {
+    border-bottom: none;
+    border-top: 1px dashed #1E3B22;
+  }
+
   @keyframes blink { 50% { opacity: 0.15; } }
   @-webkit-keyframes blink { 50% { opacity: 0.15; } }
 
@@ -424,6 +429,8 @@
     <main id="chat-messages" class="chat-container">
       <div class="message assistant-message" id="first-msg">This is Xystelsya, 007 Agent, Ready to listen your secret.</div>
     </main>
+
+    <div id="status-text-bottom" class="status-text status-text-bottom"></div>
 
     <div class="controls">
       <form onsubmit="return eksekusiKirim();" action="javascript:void(0);" class="send-form">
